@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  kafkaDispatcherTest:
+    image: confluentinc/cp-kafka:7.2.1
+    container_name: kafkaDispatcherTest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeperDispatcherTest:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafkaDispatcherTest:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeperDispatcherTest
+    restart: always
+
+  zookeeperDispatcherTest:
+    image: confluentinc/cp-zookeeper:7.2.1
+    container_name: zookeeperDispatcherTest
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    restart: always
+
+  dbTest:
+    restart: always
+    container_name: dbTest
+    image: postgres:latest
+    volumes:
+      - ./.database/postgres/data:/var/lib/postgres/data
+    ports:
+      - 5436:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+
+  dispatchertest:
+    build: .
+    container_name: DispatcherTest
+    depends_on:
+      - kafkaDispatcherTest
+      - dbTest
+    environment:
+      - CONFIG_PATH=/DispatcherApp/config.yaml
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./config/local.yaml:/app/config.yaml
+    #restart: always
+
+volumes:
+  db_data:
