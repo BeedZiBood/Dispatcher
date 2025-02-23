@@ -48,7 +48,7 @@ services:
       - KAFKA_BROKER=kafka:9092
     volumes:
       - ./config/local.yaml:/app/config.yaml
-    #restart: always
+    restart: always
 
 volumes:
   db_data:

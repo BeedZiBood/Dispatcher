@@ -40,7 +40,6 @@ func New(cfg *config.Config) (Entrypoint, error) {
 	var err error
 
 	ep.logger = logger.SetupLogger(ep.cfg.Env)
-
 	ep.logger.Info("UserService starts", slog.String("env", cfg.Env))
 
 	// init db
@@ -50,11 +49,13 @@ func New(cfg *config.Config) (Entrypoint, error) {
 		return nil, err
 	}
 
+	ep.logger.Info("Connecting to kafka")
 	ep.kafkaProducer, err = kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": cfg.KafkaProducer.Broker})
 	if err != nil {
 		ep.logger.Error("Ошибка создания Kafka producer", "error", err)
 		return nil, err
 	}
+	ep.logger.Info("Connected to kafka")
 
 	// init gRPC client
 	grpcClient, err := grpcDevice.New(
@@ -87,6 +88,7 @@ func New(cfg *config.Config) (Entrypoint, error) {
 }
 
 func (ep *entrypoint) Run() error {
+	ep.logger.Info("Starting server")
 	srv := &http.Server{
 		Addr:         ep.cfg.HTTPServer.Address,
 		Handler:      ep.router,
@@ -96,7 +98,7 @@ func (ep *entrypoint) Run() error {
 	}
 
 	if err := srv.ListenAndServe(); err != nil {
-		ep.logger.Error("failed to start server")
+		ep.logger.Error("failed to start server", slog.Any("error", err))
 	}
 
 	return nil

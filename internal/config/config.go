@@ -43,7 +43,7 @@ type PostgresConfig struct {
 }
 
 type CycleBufferConfig struct {
-	MaxSize int `yaml:"max_size"`
+	MaxSize int64 `yaml:"max_size"`
 }
 
 func MustLoad() *Config {

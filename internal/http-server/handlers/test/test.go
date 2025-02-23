@@ -11,9 +11,15 @@ import (
 	"github.com/go-chi/render"
 )
 
+type TrashTest struct {
+	TestRequest
+	ArrivalTime time.Time
+	RemovalTime time.Time
+}
+
 type TestRequest struct {
-	SourceNumber uint `json:"id"`
-	TestNumber   uint `json:"test_number"`
+	SourceID   uint `json:"source_id"`
+	TestNumber uint `json:"test_number"`
 }
 type TestResponse struct {
 	Message string `json:"message"`
@@ -26,15 +32,21 @@ type Handler struct {
 }
 
 type TestCycleBuffer interface {
-	CheckAvailableSpace() (int, error)
-	GetMaxSize() int
-	GetCurrId() int
+	CheckAvailableSpace() (int64, error)
+	GetMaxSize() int64
+	GetCurrId() int64
 	SaveTest(test *TestRequest) error
-	GetTrashTest() (*TestRequest, time.Time, time.Time)
+	GetTrashTest() (*TrashTest, error)
 }
 
 func New(log *slog.Logger, handler *Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "handlers.test.New"
+
+		log := log.With(
+			slog.String("op", op),
+		)
+
 		var req TestRequest
 		err := render.DecodeJSON(r.Body, &req)
 		if errors.Is(err, io.EOF) {
@@ -71,16 +83,26 @@ func New(log *slog.Logger, handler *Handler) http.HandlerFunc {
 
 			return
 		}
+		log.Info("availableSpace=", availableSpace)
 		maxSize := handler.testStorage.GetMaxSize()
 		if availableSpace == 0 {
-			handler.testStorage.SaveTest(&req)
-			trashTest, arrivalTime, removalTime := handler.testStorage.GetTrashTest()
-			log.Info("trash test", slog.Any("test", trashTest), slog.Any("arrival_time", arrivalTime), slog.Any("removal_time", removalTime))
+			log.Info("Send test to buffer and get trash test from trash_table")
+			err := handler.testStorage.SaveTest(&req)
+			if err != nil {
+				log.Error("failed to save test", err)
+			}
+			trashTest, err := handler.testStorage.GetTrashTest()
+			if err != nil {
+				log.Error("failed to get trash test", err)
+			}
+			log.Info("trash test", slog.Any("test", trashTest))
 			//TODO: send report to UserService and StatisticService
 		} else if availableSpace == maxSize {
+			log.Info("Trying to send test to device, if it's imposible, try to send test to buffer")
 			//TODO: send report to Devices (there is two grpc methods getFreeDevices and sendTest)
 			//TODO: send report to UserService and StatisticService
 		} else if availableSpace < maxSize {
+			log.Info("Save test in buffer")
 			handler.testStorage.SaveTest(&req)
 			//TODO: send report to UserService and StatisticService
 		}
