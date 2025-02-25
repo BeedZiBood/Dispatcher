@@ -6,8 +6,8 @@ github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkk
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
-github.com/BeedZiBood/protos v0.0.0-20250218102858-9ab81c73ad33 h1:/qvcciT05yXC5Tyj1VxLqhrjSM+akp8PIr8SCclQa6Y=
-github.com/BeedZiBood/protos v0.0.0-20250218102858-9ab81c73ad33/go.mod h1:cxm2MgS0G9aaKuGn9TL5HVp5qEiHcRiJHm7c5A+2Jsg=
+github.com/BeedZiBood/protos v0.0.4 h1:KX1MdtqPFWSvLS8c1nYfx3i2vsQziqkxCV0jtyOENao=
+github.com/BeedZiBood/protos v0.0.4/go.mod h1:cxm2MgS0G9aaKuGn9TL5HVp5qEiHcRiJHm7c5A+2Jsg=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=

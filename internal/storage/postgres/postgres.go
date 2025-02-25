@@ -268,3 +268,24 @@ func (st *Storage) moveToTrash() error {
 	st.currId = currentID
 	return nil
 }
+
+func (st *Storage) GetTest() (int64, int64, error) {
+	query := `
+        SELECT source_number, request_number 
+        FROM circular_buffer 
+        ORDER BY source_number, request_number 
+        LIMIT 1`
+
+	var source, request int64
+
+	// Выполняем запрос и сканируем результат
+	err := st.db.QueryRow(query).Scan(&source, &request)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return -1, -1, nil
+		}
+		return 0, 0, fmt.Errorf("error querying record: %v", err)
+	}
+
+	return source, request, nil
+}

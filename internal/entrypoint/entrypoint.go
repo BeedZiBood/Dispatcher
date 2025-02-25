@@ -6,9 +6,11 @@ import (
 	"Dispatcher/internal/http-server/handlers/test"
 	"Dispatcher/internal/logger"
 	storage "Dispatcher/internal/storage/postgres"
+	"context"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"log"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -63,11 +65,6 @@ func New(cfg *config.Config) (Entrypoint, error) {
 		ep.cfg.GRPCClient.Address,
 	)
 
-	_ = grpcClient
-
-	//TODO: Init gRPC server
-
-	//TODO: Init HTTP server
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
@@ -81,6 +78,37 @@ func New(cfg *config.Config) (Entrypoint, error) {
 	))
 
 	ep.router = router
+
+	go func(client *grpcDevice.Client) {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+				devices, err := client.GetDeviceList(ctx)
+				if err != nil {
+					log.Printf("could not call RPCMethod: %v", err)
+				}
+				if len(devices) > 0 {
+					for _, device := range devices {
+						sourceNum, requestNum, err := ep.st.GetTest()
+						if err != nil {
+							log.Println(err)
+						}
+						if sourceNum == -1 && requestNum == -1 {
+							break
+						}
+						client.SendTest(ctx, device.DeviceId, int32(sourceNum), int32(requestNum))
+					}
+				}
+
+				cancel()
+			}
+		}
+	}(grpcClient)
 
 	ep.logger.Info("Creating was finished")
 

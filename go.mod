@@ -3,7 +3,7 @@ module Dispatcher
 go 1.22.5
 
 require (
-	github.com/BeedZiBood/protos v0.0.0-20250218102858-9ab81c73ad33
+	github.com/BeedZiBood/protos v0.0.4
 	github.com/confluentinc/confluent-kafka-go/v2 v2.8.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/render v1.0.3

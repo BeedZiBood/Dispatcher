@@ -30,7 +30,7 @@ func New(
 	}, nil
 }
 
-func (c *Client) GetDeviceList(ctx context.Context) ([]int32, error) {
+func (c *Client) GetDeviceList(ctx context.Context) ([]*device.DeviceResponse, error) {
 	resp, err := c.api.GetDeviceList(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("Can't get device list: %w", err)
@@ -38,7 +38,7 @@ func (c *Client) GetDeviceList(ctx context.Context) ([]int32, error) {
 	return resp.Devices, nil
 }
 
-func (c *Client) SendTest(ctx context.Context, deviceId, sourceId, testNumber uint) error {
+func (c *Client) SendTest(ctx context.Context, deviceId, sourceId, testNumber int32) error {
 	_, err := c.api.SendTest(ctx, &device.TestRequest{
 		DeviceId:   uint32(deviceId),
 		SourceId:   uint32(sourceId),
