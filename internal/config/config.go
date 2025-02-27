@@ -12,7 +12,7 @@ type Config struct {
 	Env               string `yaml:"env"`
 	PostgresConfig    `yaml:"postgres"`
 	HTTPServer        `yaml:"http_server"`
-	GRPCClient        `yaml:"grpc_config"`
+	GRPCClient        `yaml:"grpc_client"`
 	KafkaProducer     `yaml:"kafka_producer"`
 	CycleBufferConfig `yaml:"cycle_buffer"`
 }

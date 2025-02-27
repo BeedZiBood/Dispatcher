@@ -71,7 +71,7 @@ func New(cfg *config.Config) (Entrypoint, error) {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	http_handler := test.NewHandler(ep.st, grpcClient)
+	http_handler := test.NewHandler(ep.st, grpcClient, ep.kafkaProducer, ep.cfg)
 	router.Post("/test", test.New(
 		ep.logger,
 		http_handler,
@@ -90,18 +90,33 @@ func New(cfg *config.Config) (Entrypoint, error) {
 
 				devices, err := client.GetDeviceList(ctx)
 				if err != nil {
-					log.Printf("could not call RPCMethod: %v", err)
+					continue
 				}
+				availableSpace, err := ep.st.CheckAvailableSpace()
+				if err != nil {
+					ep.logger.Error(err.Error())
+					continue
+				}
+				if availableSpace == cfg.MaxSize {
+					continue
+				}
+				ep.logger.Debug("getting list of free devices", slog.Any("available space", availableSpace), slog.Any("num of devices", len(devices)), slog.Any("available devices", devices))
 				if len(devices) > 0 {
 					for _, device := range devices {
-						sourceNum, requestNum, err := ep.st.GetTest()
+						pos, sourceNum, requestNum, err := ep.st.GetTest()
 						if err != nil {
-							log.Println(err)
+							ep.logger.Error(err.Error())
+							break
 						}
 						if sourceNum == -1 && requestNum == -1 {
 							break
 						}
+						ep.logger.Debug("try to send test", slog.Any("device", device))
 						client.SendTest(ctx, device.DeviceId, int32(sourceNum), int32(requestNum))
+						err = ep.st.DeleteTest(pos)
+						if err != nil {
+							log.Println(err)
+						}
 					}
 				}
 

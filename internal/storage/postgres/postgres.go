@@ -22,8 +22,8 @@ type Storage struct {
 
 func New(cfg *config.Config, log *slog.Logger) (*Storage, error) {
 	const op = "storage.postgres.New"
-	log = log.With(slog.String("op", op))
-	log.Info("connecting to db")
+	logger := log.With(slog.String("op", op))
+	logger.Info("connecting to db")
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.PostgresConfig.Host,
 		cfg.PostgresConfig.Port,
@@ -65,7 +65,7 @@ func New(cfg *config.Config, log *slog.Logger) (*Storage, error) {
 		return nil, fmt.Errorf("%s: %w", "Can't create a trash_table table", err)
 	}
 
-	log.Info("successfully connected to db")
+	logger.Info("successfully connected to db")
 
 	return &Storage{db: db, log: log, maxSize: cfg.CycleBufferConfig.MaxSize, currId: 1}, nil
 }
@@ -145,6 +145,7 @@ func (st *Storage) SaveTest(test *test.TestRequest) error {
 	if err != nil {
 		return fmt.Errorf("Can't prepare a query to save test: %w", err)
 	}
+
 	defer stmt.Close()
 
 	log.Info("Saving test",
@@ -156,6 +157,7 @@ func (st *Storage) SaveTest(test *test.TestRequest) error {
 	if err != nil {
 		return fmt.Errorf("Can't save test: %w", err)
 	}
+	st.log.Debug("Sent test to buffer", slog.Any("pos", st.currId), slog.Any("sourse id", test.SourceID), slog.Any("test number", test.TestNumber))
 
 	log.Info("Test saved")
 
@@ -269,23 +271,35 @@ func (st *Storage) moveToTrash() error {
 	return nil
 }
 
-func (st *Storage) GetTest() (int64, int64, error) {
+func (st *Storage) GetTest() (int64, int64, int64, error) {
 	query := `
-        SELECT source_number, request_number 
+        SELECT pos, source_number, request_number 
         FROM circular_buffer 
         ORDER BY source_number, request_number 
         LIMIT 1`
 
-	var source, request int64
+	var pos, source, request int64
 
 	// Выполняем запрос и сканируем результат
-	err := st.db.QueryRow(query).Scan(&source, &request)
+	err := st.db.QueryRow(query).Scan(&pos, &source, &request)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return -1, -1, nil
+			return -1, -1, -1, nil
 		}
-		return 0, 0, fmt.Errorf("error querying record: %v", err)
+		return 0, 0, 0, fmt.Errorf("error querying record: %v", err)
 	}
 
-	return source, request, nil
+	return pos, source, request, nil
+}
+
+func (st *Storage) DeleteTest(pos int64) error {
+	_, err := st.db.Exec(
+		`DELETE FROM circular_buffer 
+         WHERE pos = $1`,
+		pos,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
 }
